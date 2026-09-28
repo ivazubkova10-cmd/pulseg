@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PULSE</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --accent: #ff007f;
+            --text: #ffffff;
+            --text-dim: #8a8d9b;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: var(--font);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* App Layout */
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+            background: radial-gradient(circle at top, #1a1c29 0%, var(--bg-color) 70%);
+        }
+
+        /* Top Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            z-index: 10;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-details .name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .user-details .level {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .stats-top {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge.coins { color: #ffd700; }
+        .badge.gems { color: #00f2fe; }
+
+        /* Main View Container */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 20px 80px 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glassmorphism Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Home View Specifics */
+        .hero-card {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, var(--card-bg) 100%);
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0,242,254,0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .hero-title {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .record-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .record-value {
+            font-size: 42px;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+            margin: 10px 0 20px 0;
+        }
+
+        .btn-play {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn-play:active {
+            transform: scale(0.98);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px 10px;
+        }
+
+        .stat-item .val {
+            font-weight: 700;
+            font-size: 16px;
+            color: #fff;
+            margin-top: 4px;
+        }
+
+        .stat-item .lbl {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* Game View Overlay & Canvas */
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .game-stat {
+            text-align: center;
+        }
+
+        .game-stat-val {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .game-stat-lbl {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .task-banner {
+            position: absolute;
+            top: 80px;
+            width: 100%;
+            text-align: center;
+            font-weight: 800;
+            font-size: 20px;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
+            pointer-events: none;
+            z-index: 10;
+            animation: pulseBanner 1s infinite alternate;
+        }
+
+        @keyframes pulseBanner {
+            from { transform: scale(0.98); opacity: 0.8; }
+            to { transform: scale(1.02); opacity: 1; }
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: rgba(11, 12, 16, 0.85);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-dim);
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+            width: 20%;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        /* Generic Lists & Items */
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .list-item:last-child { border-bottom: none; }
+
+        .item-title { font-weight: 600; font-size: 14px; }
+        .item-desc { font-size: 12px; color: var(--text-dim); }
+
+        .btn-small {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-small:disabled {
+            background: var(--card-border);
+            color: var(--text-dim);
+        }
+
+        /* Customization Grid */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .shop-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .shop-card.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+
+        .rarity {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        .rarity.COMMON { background: #555; color: #fff; }
+        .rarity.RARE { background: #0070dd; color: #fff; }
+        .rarity.EPIC { background: #a335ee; color: #fff; }
+        .rarity.LEGENDARY { background: #ff8000; color: #fff; }
+
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 5px 0;
+        }
+
+        /* Sound Toggle */
+        .sound-toggle {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 12;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="user-info">
+                <div class="avatar" id="u-avatar">P</div>
+                <div class="user-details">
+                    <div class="name" id="u-name">Player</div>
+                    <div class="level" id="u-level">Уровень 1</div>
+                </div>
+            </div>
+            <div class="stats-top">
+                <div class="badge coins">🪙 <span id="u-coins">0</span></div>
+            </div>
+        </div>
+
+        <div class="sound-toggle" id="sound-btn">🔊</div>
+
+        <!-- Content Views -->
+        <div class="content">
+
+            <!-- HOME VIEW -->
+            <div class="view active" id="view-home">
+                <div class="card hero-card">
+                    <div class="hero-title">PULSE</div>
+                    <div class="record-label">Твой Рекорд</div>
+                    <div class="record-value" id="h-record">0</div>
+                    <button class="btn-play" id="btn-start-game">ИГРАТЬ</button>
+                </div>
+
+                <div class="card stats-grid">
+                    <div class="stat-item">
+                        <div class="lbl">Лучшая серия</div>
+                        <div class="val" id="h-combo">x0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="lbl">Ср. реакция</div>
+                        <div class="val" id="h-reaction">0мс</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="lbl">Всего игр</div>
+                        <div class="val" id="h-games">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUSTOMIZE VIEW -->
+            <div class="view" id="view-customize">
+                <h3 style="margin-bottom: 10px;">Цветовая тема</h3>
+                <div class="shop-grid" id="theme-grid"></div>
+            </div>
+
+            <!-- DAILY TASKS VIEW -->
+            <div class="view" id="view-daily">
+                <h3>Ежедневные задания</h3>
+                <div class="card" style="padding:0;" id="daily-list"></div>
+            </div>
+
+            <!-- LEADERBOARD VIEW -->
+            <div class="view" id="view-leaderboard">
+                <h3>Таблица лидеров</h3>
+                <div class="card" style="padding:0;" id="leaderboard-list"></div>
+            </div>
+
+            <!-- PROFILE VIEW -->
+            <div class="view" id="view-profile">
+                <div class="card" style="text-align: center;">
+                    <div class="avatar" style="width: 70px; height: 70px; margin: 0 auto 10px auto; font-size: 28px;" id="p-avatar">P</div>
+                    <h2 id="p-name">Player</h2>
+                    <p style="color: var(--primary); font-size: 14px;" id="p-level">Уровень 1</p>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 8px; margin: 15px 0 5px 0; overflow: hidden;">
+                        <div id="p-xp-bar" style="background: var(--primary); width: 0%; height: 100%;"></div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-dim);" id="p-xp-text">0 / 100 XP</div>
+                </div>
+
+                <h3>Достижения</h3>
+                <div class="card" style="padding:0;" id="achievements-list"></div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" data-target="view-home">
+                <div class="nav-icon">🏠</div>
+                <div>Главная</div>
+            </div>
+            <div class="nav-item" data-target="view-customize">
+                <div class="nav-icon">🎨</div>
+                <div>Стиль</div>
+            </div>
+            <div class="nav-item" data-target="view-daily">
+                <div class="nav-icon">📅</div>
+                <div>Задания</div>
+            </div>
+            <div class="nav-item" data-target="view-leaderboard">
+                <div class="nav-icon">🏆</div>
+                <div>Топ</div>
+            </div>
+            <div class="nav-item" data-target="view-profile">
+                <div class="nav-icon">👤</div>
+                <div>Профиль</div>
+            </div>
+        </div>
+
+        <!-- GAME OVERLAY -->
+        <div id="game-container">
+            <div class="game-header">
+                <div class="game-stat">
+                    <div class="game-stat-val" id="g-score">0</div>
+                    <div class="game-stat-lbl">Очки</div>
+                </div>
+                <div class="game-stat">
+                    <div class="game-stat-val" id="g-combo" style="color: var(--accent);">x1</div>
+                    <div class="game-stat-lbl">Комбо</div>
+                </div>
+                <div class="game-stat">
+                    <div class="game-stat-val" id="g-time">45</div>
+                    <div class="game-stat-lbl">Время</div>
+                </div>
+            </div>
+            <div class="task-banner" id="g-task">ГОТОВЬСЯ!</div>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        /* --- SOUND SYSTEM (Web Audio API) --- */
+        class AudioSystem {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.enabled = true;
+            }
+
+            playTone(freq, type = 'sine', duration = 0.1) {
+                if (!this.enabled) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+
+            click() { this.playTone(600, 'sine', 0.05); }
+            success() { this.playTone(800, 'sine', 0.1); setTimeout(() => this.playTone(1200, 'sine', 0.15), 50); }
+            error() { this.playTone(200, 'sawtooth', 0.2); }
+            levelUp() { 
+                [400, 600, 800, 1000].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'triangle', 0.15), i * 80);
+                });
+            }
+        }
+
+        const audio = new AudioSystem();
+
+        /* --- STATE MANAGEMENT & TELEGRAM --- */
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); }
+
+        let state = {
+            name: tg?.initDataUnsafe?.user?.first_name || "Игрок",
+            avatar: (tg?.initDataUnsafe?.user?.first_name || "P")[0].toUpperCase(),
+            coins: 100,
+            level: 1,
+            xp: 0,
+            highScore: 0,
+            bestCombo: 0,
+            avgReaction: 0,
+            totalGames: 0,
+            totalReactions: 0,
+            reactionSum: 0,
+            equippedTheme: 'cyan',
+            inventory: ['cyan'],
+            daily: [
+                { id: 1, text: "Сыграть 3 раза", req: 3, progress: 0, reward: 50, done: false },
+                { id: 2, text: "Набрать 5,000 очков", req: 5000, progress: 0, reward: 100, done: false },
+                { id: 3, text: "Сделать комбо x5", req: 5, progress: 0, reward: 75, done: false }
+            ],
+            achievements: [
+                { id: 'first', title: "Первый шаг", desc: "Сыграть 1 игру", unlocked: false },
+                { id: 'fast', title: "Молния", desc: "Реакция быстрее 300мс", unlocked: false },
+                { id: 'combo10', title: "Мастер комбо", desc: "Достигни x10 комбо", unlocked: false },
+                { id: 'score10k', title: "ПРО", desc: "Набери 10,000 очков", unlocked: false }
+            ]
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('pulse_game_data');
+            if (saved) {
+                try { state = { ...state, ...JSON.parse(saved) }; } catch(e){}
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('pulse_game_data', JSON.stringify(state));
+            updateUI();
+        }
+
+        /* --- THEMES & COSMETICS --- */
+        const themes = [
+            { id: 'cyan', name: 'Neon Cyan', color: '#00f2fe', rarity: 'COMMON', cost: 0 },
+            { id: 'pink', name: 'Cyber Pink', color: '#ff007f', rarity: 'RARE', cost: 200 },
+            { id: 'gold', name: 'Golden Glow', color: '#ffd700', rarity: 'EPIC', cost: 500 },
+            { id: 'emerald', name: 'Matrix Green', color: '#00ff66', rarity: 'LEGENDARY', cost: 1000 }
+        ];
+
+        /* --- UI RENDER & CONTROLS --- */
+        function updateUI() {
+            document.getElementById('u-name').innerText = state.name;
+            document.getElementById('p-name').innerText = state.name;
+            document.getElementById('u-avatar').innerText = state.avatar;
+            document.getElementById('p-avatar').innerText = state.avatar;
+            document.getElementById('u-level').innerText = `Уровень ${state.level}`;
+            document.getElementById('p-level').innerText = `Уровень ${state.level}`;
+            document.getElementById('u-coins').innerText = state.coins;
+
+            document.getElementById('h-record').innerText = state.highScore.toLocaleString();
+            document.getElementById('h-combo').innerText = `x${state.bestCombo}`;
+            document.getElementById('h-reaction').innerText = state.avgReaction ? `${Math.round(state.avgReaction)}мс` : '0мс';
+            document.getElementById('h-games').innerText = state.totalGames;
+
+            // XP Bar
+            const xpReq = state.level * 100;
+            const pct = Math.min(100, (state.xp / xpReq) * 100);
+            document.getElementById('p-xp-bar').style.width = `${pct}%`;
+            document.getElementById('p-xp-text').innerText = `${state.xp} / ${xpReq} XP`;
+
+            // Active theme color variable
+            const activeThemeObj = themes.find(t => t.id === state.equippedTheme) || themes[0];
+            document.documentElement.style.setProperty('--primary', activeThemeObj.color);
+
+            renderShop();
+            renderDaily();
+            renderAchievements();
+            renderLeaderboard();
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('theme-grid');
+            grid.innerHTML = '';
+            themes.forEach(t => {
+                const isOwned = state.inventory.includes(t.id);
+                const isSelected = state.equippedTheme === t.id;
+                const card = document.createElement('div');
+                card.className = `shop-card ${isSelected ? 'selected' : ''}`;
+                card.innerHTML = `
+                    <span class="rarity ${t.rarity}">${t.rarity}</span>
+                    <div class="color-preview" style="background: ${t.color}; box-shadow: 0 0 10px ${t.color};"></div>
+                    <div style="font-weight:700; font-size:13px;">${t.name}</div>
+                    ${isSelected ? '<button class="btn-small" disabled>Активно</button>' : 
+                      isOwned ? `<button class="btn-small" onclick="equipTheme('${t.id}')">Надеть</button>` :
+                      `<button class="btn-small" onclick="buyTheme('${t.id}')">🪙 ${t.cost}</button>`}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.buyTheme = (id) => {
+            const t = themes.find(x => x.id === id);
+            if (t && state.coins >= t.cost) {
+                state.coins -= t.cost;
+                state.inventory.push(id);
+                state.equippedTheme = id;
+                audio.success();
+                saveData();
+            }
+        };
+
+        window.equipTheme = (id) => {
+            state.equippedTheme = id;
+            audio.click();
+            saveData();
+        };
+
+        function renderDaily() {
+            const container = document.getElementById('daily-list');
+            container.innerHTML = '';
+            state.daily.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="item-title">${task.text}</div>
+                        <div class="item-desc">Прогресс: ${task.progress}/${task.req}</div>
+                    </div>
+                    <button class="btn-small" ${task.done || task.progress < task.req ? 'disabled' : ''} onclick="claimDaily(${task.id})">
+                        ${task.done ? 'Взято' : `🪙 ${task.reward}`}
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.claimDaily = (id) => {
+            const task = state.daily.find(t => t.id === id);
+            if (task && !task.done && task.progress >= task.req) {
+                task.done = true;
+                state.coins += task.reward;
+                audio.levelUp();
+                saveData();
+            }
+        };
+
+        function renderAchievements() {
+            const container = document.getElementById('achievements-list');
+            container.innerHTML = '';
+            state.achievements.forEach(a => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.style.opacity = a.unlocked ? '1' : '0.4';
+                item.innerHTML = `
+                    <div>
+                        <div class="item-title">${a.title} ${a.unlocked ? '✅' : ''}</div>
+                        <div class="item-desc">${a.desc}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            const mockBoard = [
+                { name: "Алексей", score: 24500 },
+                { name: state.name, score: state.highScore },
+                { name: "Мария", score: 18200 },
+                { name: "Дмитрий", score: 12100 },
+                { name: "Елена", score: 9400 }
+            ].sort((a,b) => b.score - a.score);
+
+            container.innerHTML = '';
+            mockBoard.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                if (item.name === state.name) row.style.background = 'rgba(0, 242, 254, 0.1)';
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <span style="font-weight:800; width: 20px; color: var(--primary);">${index + 1}</span>
+                        <span class="item-title">${item.name}</span>
+                    </div>
+                    <span style="font-weight:700;">${item.score.toLocaleString()}</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        /* --- NAVIGATION --- */
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                audio.click();
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                item.classList.add('active');
+                document.getElementById(item.dataset.target).classList.add('active');
+            });
+        });
+
+        document.getElementById('sound-btn').addEventListener('click', () => {
+            audio.enabled = !audio.enabled;
+            document.getElementById('sound-btn').innerText = audio.enabled ? '🔊' : '🔇';
+        });
+
+        /* --- GAME ENGINE (CANVAS) --- */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameActive = false;
+        let score = 0;
+        let combo = 1;
+        let timeLeft = 45;
+        let gameTimer = null;
+        let currentTask = 'REACTION'; // REACTION, DODGE, MATCH, PRECISION
+        let taskObjects = [];
+        let particles = [];
+        let lastActionTime = 0;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function startGame() {
+            resizeCanvas();
+            gameActive = true;
+            score = 0;
+            combo = 1;
+            timeLeft = 45;
+            document.getElementById('game-container').style.display = 'flex';
+            updateGameHeader();
+            
+            clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('g-time').innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+
+            nextChallenge();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameHeader() {
+            document.getElementById('g-score').innerText = score;
+            document.getElementById('g-combo').innerText = `x${combo}`;
+        }
+
+        function nextChallenge() {
+            const tasks = ['REACTION', 'DODGE', 'PRECISION'];
+            currentTask = tasks[Math.floor(Math.random() * tasks.length)];
+            taskObjects = [];
+            lastActionTime = Date.now();
+
+            const banner = document.getElementById('g-task');
+
+            if (currentTask === 'REACTION') {
+                banner.innerText = "ТАПАЙ ПО СВЕТЯЩИМСЯ СФЕРАМ!";
+                spawnSphere();
+            } else if (currentTask === 'DODGE') {
+                banner.innerText = "УКЛОНЯЙСЯ ОТ КРАСНЫХ ЧАСТИЦ!";
+                spawnDodgeGame();
+            } else if (currentTask === 'PRECISION') {
+                banner.innerText = "ТАПАЙ В ЦЕНТР, КОГДА КОЛЬЦО СУЗИТСЯ!";
+                spawnPrecisionGame();
+            }
+        }
+
+        function spawnSphere() {
+            const padding = 80;
+            taskObjects.push({
+                x: padding + Math.random() * (canvas.width - padding * 2),
+                y: padding + 100 + Math.random() * (canvas.height - padding * 2 - 100),
+                radius: 35,
+                color: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#00f2fe',
+                type: 'target'
+            });
+        }
+
+        function spawnDodgeGame() {
+            for(let i=0; i<5; i++) {
+                taskObjects.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (canvas.height - 200) + 100,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    radius: 20,
+                    color: '#ff0055',
+                    type: 'hazard'
+                });
+            }
+            // Safe target to clear stage
+            taskObjects.push({
+                x: canvas.width / 2,
+                y: canvas.height - 150,
+                radius: 30,
+                color: '#00ff66',
+                type: 'safe_zone'
+            });
+        }
+
+        function spawnPrecisionGame() {
+            taskObjects.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                radius: 80,
+                currentRadius: 180,
+                color: '#ffd700',
+                type: 'precision'
+            });
+        }
+
+        function addParticles(x, y, color) {
+            for(let i=0; i<15; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 1.0,
+                    color
+                });
+            }
+        }
+
+        function handleTap(e) {
+            if (!gameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            const tx = touch.clientX - rect.left;
+            const ty = touch.clientY - rect.top;
+
+            const reactionTime = Date.now() - lastActionTime;
+            state.totalReactions++;
+            state.reactionSum += reactionTime;
+            state.avgReaction = state.reactionSum / state.totalReactions;
+
+            if (reactionTime < 300) unlockAchievement('fast');
+
+            let hit = false;
+
+            if (currentTask === 'REACTION') {
+                taskObjects.forEach((obj, idx) => {
+                    const dist = Math.hypot(obj.x - tx, obj.y - ty);
+                    if (dist < obj.radius + 20) {
+                        hit = true;
+                        addParticles(obj.x, obj.y, obj.color);
+                        taskObjects.splice(idx, 1);
+                        registerSuccess(500);
+                        if (taskObjects.length === 0) nextChallenge();
+                    }
+                });
+            } else if (currentTask === 'PRECISION') {
+                const target = taskObjects[0];
+                if (target) {
+                    const diff = Math.abs(target.currentRadius - target.radius);
+                    if (diff < 20) {
+                        hit = true;
+                        addParticles(target.x, target.y, target.color);
+                        registerSuccess(1000);
+                        nextChallenge();
+                    }
+                }
+            } else if (currentTask === 'DODGE') {
+                taskObjects.forEach((obj) => {
+                    if (obj.type === 'safe_zone') {
+                        const dist = Math.hypot(obj.x - tx, obj.y - ty);
+                        if (dist < obj.radius + 15) {
+                            hit = true;
+                            addParticles(obj.x, obj.y, obj.color);
+                            registerSuccess(750);
+                            nextChallenge();
+                        }
+                    }
+                });
+            }
+
+            if (!hit) {
+                registerMiss();
+            }
+        }
+
+        function registerSuccess(basePoints) {
+            audio.success();
+            score += basePoints * combo;
+            combo = Math.min(10, combo + 1);
+            if (combo > state.bestCombo) state.bestCombo = combo;
+            if (combo >= 5) updateDailyProgress(3, combo);
+            if (combo >= 10) unlockAchievement('combo10');
+            updateGameHeader();
+        }
+
+        function registerMiss() {
+            audio.error();
+            combo = 1;
+            updateGameHeader();
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update & Render Particles
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if (p.life <= 0) particles.splice(idx, 1);
+            });
+
+            // Update & Render Game Objects
+            if (currentTask === 'REACTION') {
+                taskObjects.forEach(obj => {
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = obj.color;
+                    ctx.shadowColor = obj.color;
+                    ctx.shadowBlur = 20;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            } else if (currentTask === 'DODGE') {
+                taskObjects.forEach(obj => {
+                    if (obj.type === 'hazard') {
+                        obj.x += obj.vx;
+                        obj.y += obj.vy;
+                        if (obj.x < 0 || obj.x > canvas.width) obj.vx *= -1;
+                        if (obj.y < 100 || obj.y > canvas.height - 50) obj.vy *= -1;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = obj.color;
+                    ctx.shadowColor = obj.color;
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            } else if (currentTask === 'PRECISION') {
+                const target = taskObjects[0];
+                if (target) {
+                    target.currentRadius -= 1.5;
+                    if (target.currentRadius < 10) target.currentRadius = 180;
+
+                    // Target Base
+                    ctx.beginPath();
+                    ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = target.color;
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+
+                    // Shrinking Ring
+                    ctx.beginPath();
+                    ctx.arc(target.x, target.y, target.currentRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            document.getElementById('game-container').style.display = 'none';
+
+            // Rewards & XP
+            const earnedXp = Math.floor(score / 100);
+            const earnedCoins = Math.floor(score / 500);
+            
+            state.xp += earnedXp;
+            state.coins += earnedCoins;
+            state.totalGames++;
+
+            if (score > state.highScore) state.highScore = score;
+
+            // Level Up logic
+            const xpReq = state.level * 100;
+            if (state.xp >= xpReq) {
+                state.level++;
+                state.xp -= xpReq;
+                audio.levelUp();
+            }
+
+            // Daily Progress
+            updateDailyProgress(1, 1);
+            updateDailyProgress(2, score);
+
+            // Achievements
+            unlockAchievement('first');
+            if (score >= 10000) unlockAchievement('score10k');
+
+            saveData();
+            alert(`ИГРА ОКОНЧЕНА!\n\nОчки: ${score}\nПолучено XP: +${earnedXp}\nМонеты: +${earnedCoins}`);
+        }
+
+        function updateDailyProgress(id, val) {
+            const task = state.daily.find(t => t.id === id);
+            if (task && !task.done) {
+                if (id === 1) task.progress += val;
+                else task.progress = Math.max(task.progress, val);
+            }
+        }
+
+        function unlockAchievement(id) {
+            const a = state.achievements.find(x => x.id === id);
+            if (a && !a.unlocked) {
+                a.unlocked = true;
+            }
+        }
+
+        /* --- LISTENERS --- */
+        document.getElementById('btn-start-game').addEventListener('click', startGame);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(e); }, { passive: false });
+        canvas.addEventListener('mousedown', handleTap);
+
+        // INIT
+        loadData();
+        updateUI();
+    </script>
+</body>
+</html>
